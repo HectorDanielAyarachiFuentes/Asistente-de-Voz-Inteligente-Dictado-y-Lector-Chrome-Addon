@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Asistente de Voz y Lector</title>
+  <style>
+    :root {
+      --bg-color: #1e1f22;
+      --card-bg: #2b2d31;
+      --text-main: #f2f3f5;
+      --text-muted: #b5bac1;
+      --accent: #ff4757;
+      --accent-hover: #ff6b79;
+      --border: #3f4147;
+    }
+    body {
+      width: 340px;
+      padding: 12px;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--accent);
+    }
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .setting-group {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .setting-group:last-of-type {
+      margin-bottom: 0;
+    }
+    .setting-row {
+      margin-bottom: 12px;
+    }
+    .setting-row:last-child {
+      margin-bottom: 0;
+    }
+    .setting-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .setting-header svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--text-muted);
+    }
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    
+    /* Inputs y Selects */
+    select, input[type="text"] {
+      width: 100%;
+      background: #111214;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    select {
+      appearance: none;
+      cursor: pointer;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+    
+    /* Shortcut Input Específico */
+    .shortcut-container {
+      display: flex;
+      align-items: center;
+      background: #111214;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .shortcut-container:focus-within {
+      border-color: var(--accent);
+    }
+    .shortcut-prefix {
+      background: #3f4147;
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-right: 1px solid var(--border);
+      user-select: none;
+    }
+    .shortcut-container input {
+      border: none;
+      background: transparent;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--accent);
+      text-transform: uppercase;
+      border-radius: 0;
+    }
+    .shortcut-container input:focus {
+      border-color: transparent;
+    }
+
+    /* Toggle Switches estilo iOS */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-row .setting-header {
+      margin-bottom: 0;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #4f545c;
+      transition: .3s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+
+    /* Mensaje de guardado */
+    .save-status {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #43b581;
+      height: 16px;
+      transition: opacity 0.3s, transform 0.3s;
+      opacity: 0;
+      transform: translateY(5px);
+      margin-top: 10px;
+    }
+    .save-status.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Pestañas (Tabs) */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      color: var(--text-main);
+    }
+    .tab.active {
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .feature-list h4 {
+      margin: 0 0 4px 0;
+      color: var(--accent);
+      font-size: 14px;
+    }
+    .feature-list p {
+      margin: 0 0 12px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="header">
+    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+    <h3>Dictado y Lector Inteligente</h3>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-target="tab-config">Ajustes</div>
+    <div class="tab" data-target="tab-features">Funciones</div>
+    <div class="tab" data-target="tab-about">Sobre Mí</div>
+  </div>
+
+  <!-- TAB CONFIGURACIÓN -->
+  <div id="tab-config" class="tab-content active">
+    <div class="setting-group">
+      <div class="setting-row">
+        <div class="setting-header">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+          <label for="lang">Idioma de la Voz</label>
+        </div>
+        <select id="lang">
+          <option value="es-AR">Español (Argentina)</option>
+          <option value="es-ES">Español (España)</option>
+          <option value="es-MX">Español (México)</option>
+          <option value="en-US">Inglés (Estados Unidos)</option>
+        </select>
+      </div>
+
+      <div class="setting-row" style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <div class="setting-header">
+            <svg viewBox="0 0 24 24"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+            <label for="shortcut">Atajo Mic</label>
+          </div>
+          <div class="shortcut-container">
+            <div class="shortcut-prefix">ALT+</div>
+            <input type="text" id="shortcut" maxlength="1" placeholder="M">
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div class="setting-header">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+            <label for="submitCommand">Comando Secreto</label>
+          </div>
+          <input type="text" id="submitCommand" value="enviar mensaje" placeholder="Ej: enviar">
+        </div>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <div class="setting-row toggle-row">
+        <div class="setting-header">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <label for="sounds">Sonidos de Notificación</label>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="sounds" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-row toggle-row">
+        <div class="setting-header">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <label for="autoSubmit">Auto-enviar con Comando</label>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoSubmit" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row toggle-row">
+        <div class="setting-header">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <label for="readerMode">Lector Automático (Highlight)</label>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="readerMode" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="save-status" id="status">✔ Cambios guardados</div>
+  </div>
+
+  <!-- TAB FUNCIONES -->
+  <div id="tab-features" class="tab-content">
+    <div class="setting-group feature-list">
+      <h4>🎤 Dictado por Voz Continuo</h4>
+      <p>Escribe textos sin límite de tiempo. Usa tu atajo de teclado y la extensión inyectará el texto directamente donde estés escribiendo (ChatGPT, WhatsApp, etc.).</p>
+      
+      <h4>📖 Lector de Pantalla Karaoke</h4>
+      <p>Selecciona cualquier texto en la web y aparecerá un botón de lectura. Resalta las palabras en tiempo real usando CSS Custom Highlights y desplaza la pantalla automáticamente.</p>
+      
+      <h4>🚀 Envío Inteligente</h4>
+      <p>Di la frase secreta (ej. "enviar mensaje") al final de tu dictado y la extensión simulará presionar Enter para enviarlo sin que toques el teclado.</p>
+    </div>
+  </div>
+
+  <!-- TAB SOBRE MÍ -->
+  <div id="tab-about" class="tab-content">
+    <div class="setting-group" style="text-align: center; padding: 20px 10px;">
+      <h3 style="margin-bottom: 8px;">Diseñado por la Comunidad</h3>
+      <p style="font-size:13px; color:var(--text-muted)">Herramienta construida para mejorar la productividad de lectura y escritura en la web, sin robar tu información ni espiarte.</p>
+      <a href="https://github.com/HectorDanielAyarachiFuentes" id="github-link" target="_blank" style="display:inline-flex; align-items:center; gap:6px; margin-top:15px; color:var(--accent); text-decoration:none; font-weight:bold; font-size:14px;">
+        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        Hector Daniel Ayarachi
+      </a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

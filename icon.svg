@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Degradado de fondo oscuro -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#373b41" />
+      <stop offset="100%" stop-color="#1d1f23" />
+    </linearGradient>
+    
+    <!-- Degradado del micrófono rojo/coral -->
+    <linearGradient id="micGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b81" />
+      <stop offset="100%" stop-color="#ff4757" />
+    </linearGradient>
+
+    <!-- Filtro de resplandor sutil (Glow) -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Fondo redondeado estilo App (Squircle) -->
+  <rect width="128" height="128" rx="32" fill="url(#bgGrad)" />
+
+  <!-- Círculos decorativos de fondo (Ondas) -->
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#2a2d32" stroke-width="4" />
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#2a2d32" stroke-width="2" />
+
+  <!-- Ícono del micrófono ampliado y centrado -->
+  <g transform="translate(36, 32) scale(2.33)">
+    <!-- Cabezal del micrófono -->
+    <path fill="url(#micGrad)" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" filter="url(#glow)"/>
+    <!-- Soporte del micrófono -->
+    <path fill="#e1e1e1" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+  </g>
+</svg>
