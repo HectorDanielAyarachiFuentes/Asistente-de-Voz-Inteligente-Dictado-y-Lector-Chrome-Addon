@@ -7,7 +7,7 @@ window.VoiceAssistant.configuracion = {
     autoSubmit: true,
     readerMode: true,
     submitCommand: 'enviar mensaje',
-    voiceCommandToggle: true,
+    voiceCommandToggle: false,
     activationCommand: 'activar',
     deactivationCommand: 'desactivar'
 };

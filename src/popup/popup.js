@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         autoSubmit: true,
         readerMode: true,
         submitCommand: 'enviar mensaje',
-        voiceCommandToggle: true,
+        voiceCommandToggle: false,
         activationCommand: 'activar',
         deactivationCommand: 'desactivar'
     }, (items) => {
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             autoSubmit: autoSubmitCheck.checked,
             readerMode: readerModeCheck.checked,
             submitCommand: submitCommandInput.value.trim(),
-            voiceCommandToggle: voiceCommandToggleCheck ? voiceCommandToggleCheck.checked : true,
+            voiceCommandToggle: voiceCommandToggleCheck ? voiceCommandToggleCheck.checked : false,
             activationCommand: activationCommandInput ? activationCommandInput.value.trim() : 'activar',
             deactivationCommand: deactivationCommandInput ? deactivationCommandInput.value.trim() : 'desactivar'
         }, () => {
