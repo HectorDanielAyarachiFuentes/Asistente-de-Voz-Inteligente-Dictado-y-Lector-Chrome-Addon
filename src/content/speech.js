@@ -9,6 +9,7 @@ window.VoiceAssistant.speech.recognition.continuous = false;
 window.VoiceAssistant.speech.recognition.interimResults = true;
 
 window.VoiceAssistant.speech.estaGrabando = false;
+window.VoiceAssistant.speech.escuchaPasivaActiva = false;
 window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
 
 window.VoiceAssistant.speech.procesarPuntuacion = function(texto) {
@@ -39,11 +40,19 @@ window.VoiceAssistant.speech.toggleGrabacion = function() {
         window.VoiceAssistant.reproducirSonido(false);
     } else {
         window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
-        try {
-            rec.start();
-        } catch (e) {
-            console.warn("Recognition already started", e);
+        
+        // Si ya estaba escuchando pasivamente, abortamos el reconocimiento actual para limpiar el buffer
+        // y evitar que la palabra de activación se escriba en el siguiente ciclo.
+        if (window.VoiceAssistant.speech.escuchaPasivaActiva) {
+            try { rec.abort(); } catch(e) {}
+        } else {
+            try {
+                rec.start();
+            } catch (e) {
+                console.warn("Recognition already started", e);
+            }
         }
+        
         micButton.classList.add('grabando');
         window.VoiceAssistant.reproducirSonido(true);
     }
@@ -53,15 +62,24 @@ window.VoiceAssistant.speech.toggleGrabacion = function() {
 window.VoiceAssistant.speech.initEvents = function() {
     const rec = window.VoiceAssistant.speech.recognition;
     
-    // Sincronizar el idioma
     window.addEventListener('VoiceAssistantConfigChanged', () => {
         rec.lang = window.VoiceAssistant.configuracion.lang;
+        if (window.VoiceAssistant.configuracion.voiceCommandToggle && window.VoiceAssistant.campoActivo) {
+            window.VoiceAssistant.speech.escuchaPasivaActiva = true;
+            if (!window.VoiceAssistant.speech.estaGrabando) {
+                try { rec.start(); } catch(e){}
+            }
+        } else {
+            window.VoiceAssistant.speech.escuchaPasivaActiva = false;
+            if (!window.VoiceAssistant.speech.estaGrabando) {
+                try { rec.stop(); } catch(e){}
+            }
+        }
     });
 
     rec.onresult = (event) => {
-        const campoActivo = window.VoiceAssistant.campoActivo;
-        if (!campoActivo) return;
-
+        const { autoSubmit, submitCommand, voiceCommandToggle, activationCommand, deactivationCommand } = window.VoiceAssistant.configuracion;
+        
         let textoInterino = '';
         let textoFinal = '';
 
@@ -75,9 +93,43 @@ window.VoiceAssistant.speech.initEvents = function() {
             }
         }
 
+        let acabaDeDesactivar = false;
+
+        // --- MANEJO DE COMANDOS DE ACTIVACIÓN/DESACTIVACIÓN POR VOZ ---
+        if (voiceCommandToggle) {
+            if (!window.VoiceAssistant.speech.estaGrabando && activationCommand) {
+                const comandoActivar = activationCommand.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regexActivar = new RegExp('\\b' + comandoActivar.replace(/r$/i, '') + 'r?\\b', 'i');
+                if (regexActivar.test(textoFinal) || regexActivar.test(textoInterino)) {
+                    if (window.VoiceAssistant.campoActivo) {
+                        if (window.VoiceAssistant.ui.micButton.style.display === 'none' || window.VoiceAssistant.ui.micButton.style.display === '') {
+                            window.VoiceAssistant.ui.posicionarMicBoton(window.VoiceAssistant.campoActivo);
+                        }
+                        window.VoiceAssistant.speech.toggleGrabacion();
+                        return; // Ignoramos el resto para no escribir el comando
+                    }
+                }
+            } else if (window.VoiceAssistant.speech.estaGrabando && deactivationCommand) {
+                // Hacemos el regex un poco más flexible (haciendo la última 'r' opcional) por si Chrome reconoce "desactiva" en vez de "desactivar"
+                const comandoDesactivar = deactivationCommand.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regexDesactivar = new RegExp('\\b' + comandoDesactivar.replace(/r$/i, '') + 'r?\\b', 'i');
+                
+                if (regexDesactivar.test(textoFinal) || regexDesactivar.test(textoInterino)) {
+                    window.VoiceAssistant.speech.toggleGrabacion();
+                    textoFinal = textoFinal.replace(regexDesactivar, '').trim();
+                    textoInterino = textoInterino.replace(regexDesactivar, '').trim();
+                    acabaDeDesactivar = true;
+                }
+            }
+        }
+
+        if (!window.VoiceAssistant.speech.estaGrabando && !acabaDeDesactivar) return;
+
+        const campoActivo = window.VoiceAssistant.campoActivo;
+        if (!campoActivo) return;
+
         let debeEnviar = false;
 
-        const { autoSubmit, submitCommand } = window.VoiceAssistant.configuracion;
         if (autoSubmit && submitCommand) {
             const comandoEscapado = submitCommand.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regexEnviar = new RegExp('\\b' + comandoEscapado + '\\.?$', 'i');
@@ -114,6 +166,8 @@ window.VoiceAssistant.speech.initEvents = function() {
                 window.VoiceAssistant.speech.retrocederSeleccion(window.VoiceAssistant.speech.longitudInterinaAnterior);
                 if (textoAInsertar !== '') {
                     document.execCommand('insertText', false, textoAInsertar);
+                } else if (window.VoiceAssistant.speech.longitudInterinaAnterior > 0) {
+                    document.execCommand('delete', false, null);
                 }
             } else {
                 const start = (campoActivo.selectionEnd || 0) - window.VoiceAssistant.speech.longitudInterinaAnterior;
@@ -130,7 +184,7 @@ window.VoiceAssistant.speech.initEvents = function() {
             // Forzar el auto-scroll hacia abajo para seguir la lectura/escritura
             campoActivo.scrollTop = campoActivo.scrollHeight;
             
-            if (fraseFinalizada || debeEnviar) {
+            if (fraseFinalizada || debeEnviar || acabaDeDesactivar) {
                 window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
             } else {
                 window.VoiceAssistant.speech.longitudInterinaAnterior = textoAInsertar.length;
@@ -152,6 +206,7 @@ window.VoiceAssistant.speech.initEvents = function() {
     rec.onerror = (event) => {
         console.error("Dictado Rápido - Error: ", event.error);
         if (event.error === 'not-allowed') {
+            window.VoiceAssistant.configuracion.voiceCommandToggle = false;
             alert("¡Permiso de micrófono denegado!\n\nPermite el acceso al Micrófono.");
             if (window.VoiceAssistant.speech.estaGrabando) {
                 window.VoiceAssistant.speech.toggleGrabacion();
@@ -160,14 +215,18 @@ window.VoiceAssistant.speech.initEvents = function() {
     };
 
     rec.onend = () => {
-        if (window.VoiceAssistant.speech.estaGrabando) {
+        if (window.VoiceAssistant.speech.estaGrabando || window.VoiceAssistant.speech.escuchaPasivaActiva) {
             try {
-                window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
+                if (window.VoiceAssistant.speech.estaGrabando) {
+                    window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
+                }
                 rec.start();
             } catch (e) {
-                console.error(e);
+                // Ignore already started errors
             }
-        } else {
+        } 
+        
+        if (!window.VoiceAssistant.speech.estaGrabando) {
             window.VoiceAssistant.ui.micButton.classList.remove('grabando');
         }
     };

@@ -6,7 +6,10 @@ window.VoiceAssistant.configuracion = {
     sounds: true,
     autoSubmit: true,
     readerMode: true,
-    submitCommand: 'enviar mensaje'
+    submitCommand: 'enviar mensaje',
+    voiceCommandToggle: true,
+    activationCommand: 'activar',
+    deactivationCommand: 'desactivar'
 };
 
 window.VoiceAssistant.initStorage = function(onReady) {

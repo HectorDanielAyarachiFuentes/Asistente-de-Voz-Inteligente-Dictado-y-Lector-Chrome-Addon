@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoSubmitCheck = document.getElementById('autoSubmit');
     const readerModeCheck = document.getElementById('readerMode');
     const submitCommandInput = document.getElementById('submitCommand');
+    const voiceCommandToggleCheck = document.getElementById('voiceCommandToggle');
+    const activationCommandInput = document.getElementById('activationCommand');
+    const deactivationCommandInput = document.getElementById('deactivationCommand');
     const statusMsg = document.getElementById('status');
 
     let saveTimeout;
@@ -17,7 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
         sounds: true,
         autoSubmit: true,
         readerMode: true,
-        submitCommand: 'enviar mensaje'
+        submitCommand: 'enviar mensaje',
+        voiceCommandToggle: true,
+        activationCommand: 'activar',
+        deactivationCommand: 'desactivar'
     }, (items) => {
         langSelect.value = items.lang;
         
@@ -35,6 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
         autoSubmitCheck.checked = items.autoSubmit;
         readerModeCheck.checked = items.readerMode;
         submitCommandInput.value = items.submitCommand;
+        
+        if(voiceCommandToggleCheck) voiceCommandToggleCheck.checked = items.voiceCommandToggle;
+        if(activationCommandInput) activationCommandInput.value = items.activationCommand;
+        if(deactivationCommandInput) deactivationCommandInput.value = items.deactivationCommand;
 
         setTimeout(() => { loaded = true; }, 100);
     });
@@ -55,7 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sounds: soundsCheck.checked,
             autoSubmit: autoSubmitCheck.checked,
             readerMode: readerModeCheck.checked,
-            submitCommand: submitCommandInput.value.trim()
+            submitCommand: submitCommandInput.value.trim(),
+            voiceCommandToggle: voiceCommandToggleCheck ? voiceCommandToggleCheck.checked : true,
+            activationCommand: activationCommandInput ? activationCommandInput.value.trim() : 'activar',
+            deactivationCommand: deactivationCommandInput ? deactivationCommandInput.value.trim() : 'desactivar'
         }, () => {
             statusMsg.classList.add('show');
             saveTimeout = setTimeout(() => {
@@ -70,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
     autoSubmitCheck.addEventListener('change', guardarAjustes);
     readerModeCheck.addEventListener('change', guardarAjustes);
     submitCommandInput.addEventListener('input', guardarAjustes);
+    if(voiceCommandToggleCheck) voiceCommandToggleCheck.addEventListener('change', guardarAjustes);
+    if(activationCommandInput) activationCommandInput.addEventListener('input', guardarAjustes);
+    if(deactivationCommandInput) deactivationCommandInput.addEventListener('input', guardarAjustes);
 
     // Grabador de Atajo Limpio (Solo recibe 1 letra o número)
     shortcutInput.addEventListener('keydown', (e) => {

@@ -28,10 +28,50 @@ window.VoiceAssistant.initStorage(() => {
 
     const { ui, speech } = window.VoiceAssistant;
 
+    // Verificar si hay un campo activo al cargar la página
+    setTimeout(() => {
+        const activeEl = document.activeElement;
+        if (activeEl) {
+            const campo = window.VoiceAssistant.obtenerCampoDeTexto({ target: activeEl });
+            if (campo) {
+                ui.posicionarMicBoton(campo);
+                if (window.VoiceAssistant.configuracion.voiceCommandToggle) {
+                    window.VoiceAssistant.speech.escuchaPasivaActiva = true;
+                    if (!window.VoiceAssistant.speech.estaGrabando) {
+                        try { speech.recognition.start(); } catch (e) {}
+                    }
+                }
+            }
+        }
+    }, 500);
+
     // Eventos Globales de Interacción
     document.addEventListener('focusin', (event) => {
         const campo = window.VoiceAssistant.obtenerCampoDeTexto(event);
-        if (campo) ui.posicionarMicBoton(campo);
+        if (campo) {
+            ui.posicionarMicBoton(campo);
+            if (window.VoiceAssistant.configuracion.voiceCommandToggle) {
+                window.VoiceAssistant.speech.escuchaPasivaActiva = true;
+                if (!window.VoiceAssistant.speech.estaGrabando) {
+                    try { speech.recognition.start(); } catch (e) {}
+                }
+            }
+        }
+    });
+
+    document.addEventListener('focusout', (event) => {
+        // Ignoramos si el foco pasó al botón del micrófono o al del lector
+        if (event.relatedTarget === ui.micButton || event.relatedTarget === ui.readerButton) {
+            return;
+        }
+        
+        const nuevoCampo = event.relatedTarget ? window.VoiceAssistant.obtenerCampoDeTexto({ target: event.relatedTarget }) : null;
+        if (!nuevoCampo) {
+            window.VoiceAssistant.speech.escuchaPasivaActiva = false;
+            if (!window.VoiceAssistant.speech.estaGrabando) {
+                try { speech.recognition.stop(); } catch (e) {}
+            }
+        }
     });
 
     document.addEventListener('mouseover', (event) => {
