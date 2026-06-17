@@ -78,23 +78,43 @@ window.VoiceAssistant.speech.initEvents = function() {
         let debeEnviar = false;
 
         const { autoSubmit, submitCommand } = window.VoiceAssistant.configuracion;
-        if (textoFinal !== '' && autoSubmit && submitCommand) {
+        if (autoSubmit && submitCommand) {
             const comandoEscapado = submitCommand.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regexEnviar = new RegExp(comandoEscapado + '\\.?$', 'i');
-            if (regexEnviar.test(textoFinal)) {
-                debeEnviar = true;
-                textoFinal = textoFinal.replace(regexEnviar, '').trim();
+            const regexEnviar = new RegExp('\\b' + comandoEscapado + '\\.?$', 'i');
+            
+            if (fraseFinalizada) {
+                if (regexEnviar.test(textoFinal)) {
+                    debeEnviar = true;
+                    textoFinal = textoFinal.replace(regexEnviar, '').trim();
+                }
+            } else {
+                if (regexEnviar.test(textoInterino)) {
+                    // Si se detecta en el texto interino, podemos enviar de inmediato para mayor velocidad
+                    // o simplemente ocultarlo. Vamos a ocultarlo y enviarlo.
+                    debeEnviar = true;
+                    textoInterino = textoInterino.replace(regexEnviar, '').trim();
+                }
             }
         }
 
-        const textoBase = textoFinal !== '' ? textoFinal + (textoFinal.length > 0 && !debeEnviar ? " " : "") : textoInterino;
+        // Construimos el texto base dependiendo de si hay resultados finales o solo interinos
+        let textoBase = '';
+        if (fraseFinalizada) {
+            textoBase = textoFinal + (textoFinal.length > 0 && !debeEnviar ? " " : "");
+        } else {
+            textoBase = textoInterino;
+        }
+
         const textoAInsertar = window.VoiceAssistant.speech.procesarPuntuacion(textoBase);
 
-        if (textoAInsertar !== '') {
+        // Siempre debemos procesar si hay texto nuevo o si necesitamos borrar texto interino anterior
+        if (textoAInsertar !== '' || window.VoiceAssistant.speech.longitudInterinaAnterior > 0) {
             if (campoActivo.isContentEditable) {
                 campoActivo.focus();
                 window.VoiceAssistant.speech.retrocederSeleccion(window.VoiceAssistant.speech.longitudInterinaAnterior);
-                document.execCommand('insertText', false, textoAInsertar);
+                if (textoAInsertar !== '') {
+                    document.execCommand('insertText', false, textoAInsertar);
+                }
             } else {
                 const start = (campoActivo.selectionEnd || 0) - window.VoiceAssistant.speech.longitudInterinaAnterior;
                 const end = campoActivo.selectionEnd || 0;
@@ -110,7 +130,7 @@ window.VoiceAssistant.speech.initEvents = function() {
             // Forzar el auto-scroll hacia abajo para seguir la lectura/escritura
             campoActivo.scrollTop = campoActivo.scrollHeight;
             
-            if (textoFinal !== '' || debeEnviar) {
+            if (fraseFinalizada || debeEnviar) {
                 window.VoiceAssistant.speech.longitudInterinaAnterior = 0;
             } else {
                 window.VoiceAssistant.speech.longitudInterinaAnterior = textoAInsertar.length;
